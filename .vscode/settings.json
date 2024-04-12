@@ -3,8 +3,6 @@
 		"onsubmit"
 	],
 	"rust-analyzer.linkedProjects": [
-		".\\ammuto-lib\\Cargo.toml",
-		".\\ammuto-lib\\Cargo.toml",
-		".\\ammuto-lib\\Cargo.toml"
+		"ammuto-core\\Cargo.toml"
 	]
 }

@@ -45,32 +45,6 @@
 		{
 			"type": "lldb",
 			"request": "launch",
-			"name": "[Debug] UI Development",
-			"cargo": {
-			  "args": [
-				"build",
-				"--manifest-path=./ammuto-client/src-tauri/Cargo.toml",
-				"--no-default-features"
-			  ]
-			},
-			// task for the `beforeDevCommand` if used, must be configured in `.vscode/tasks.json`
-			"preLaunchTask": "ui:dev",
-			"cwd": "${workspaceFolder}"
-		 },
-		{
-			"type": "lldb",
-			"request": "launch",
-			"name": "[Debug] UI Production",
-			"cargo": {
-			  "args": ["build", "--release", "--manifest-path=./ammuto-client/src-tauri/Cargo.toml"]
-			},
-			// task for the `beforeBuildCommand` if used, must be configured in `.vscode/tasks.json`
-			"preLaunchTask": "ui:build",
-			"cwd": "${workspaceFolder}"
-		},
-		{
-			"type": "lldb",
-			"request": "launch",
 			"name": "[Debug] Ammuto CLI",
 			"cargo": {
 				"args": [

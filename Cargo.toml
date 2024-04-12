@@ -1,8 +1,6 @@
 [workspace]
 members = [
-	"ammuto-lib",
-	"ammuto-client",
-	"ammuto-client/src-tauri",
+	"ammuto-core",
 	"ammuto-cli"
 ]
 resolver = "2"
