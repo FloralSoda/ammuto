@@ -3,6 +3,10 @@
 //! 
 //!The implementations provided here only include officially supported features. For custom features, please fork or make your own version, or consider requesting that feature to be included in the official implementation!
 
+use std::sync::mpsc::{RecvError, SendError};
+
+use query::{DatabaseQuery, DatabaseResult};
+
 pub mod query;
 pub mod values;
 
@@ -47,10 +51,18 @@ pub enum CommunicationMode<Communicator> {
 	Poll
 }
 
-///Describes the functions a Frontend should provide to accept data and requests from Ammuto
+///Describes the functions required for Ammuto to control and handle any frontend
 pub trait FrontendAdapter {
+	type DatabaseQuerySender : FnOnce(DatabaseQuery) -> Result<(), SendError<DatabaseQuery>>;
+	type DatabaseResultReceiver : FnOnce(u32) -> Result<DatabaseResult, RecvError>;
 	///Requests the Frontend's preferred mode of communication
 	fn preferred_flow() -> CommunicationMode<impl FrontendCommunicator>;
+	///Serves as the entry point for the frontend. This is expected to block the thread
+	fn run();
+	///When a result is returned from a query, or the database is pushing a change to the frontend, this function is called
+	/// 
+	///This function is expected to be thread-safe. It is recommended to use channels to communicate with the frontend thread.
+	fn database_message(&mut self, id: u64, values: DatabaseResult);
 }
 ///Describes the functions required to communicate with the Frontend using [`CommunicationMode::Push`]
 pub trait FrontendCommunicator {

@@ -1,3 +1,5 @@
+use crate::values::{Collection, Group, Media, Tag, User};
+
 ///Represents a fully formed query to send to the database.
 ///You may manually create one of this, or use one of the other Query structs to build one in a safer, more verbose way
 pub struct DatabaseQuery {
@@ -348,4 +350,19 @@ pub enum DatabaseValue<T> {
 	None,
 	///The user is not authorised to know the value of this property
 	Unauthorised
+}
+///Describes the possible return types from a database
+pub enum DatabaseResult {
+	///The database provided a list of tags
+	Tags(Vec<DatabaseValue<Tag>>),
+	///The database provided a list of media objects
+	Media(Vec<DatabaseValue<Media>>),
+	///The database provided a list of tag groups
+	Groups(Vec<DatabaseValue<Group>>),
+	///The database provided a list of media collections
+	Collections(Vec<DatabaseValue<Collection>>),
+	///The database provided a list of users
+	Users(Vec<DatabaseValue<User>>),
+	///The database provided an integer
+	Integer(DatabaseValue<u32>)
 }
