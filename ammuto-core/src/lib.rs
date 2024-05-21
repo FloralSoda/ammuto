@@ -6,6 +6,7 @@
 use std::sync::mpsc::{RecvError, SendError};
 
 use query::{DatabaseQuery, DatabaseResult};
+use uuid::Uuid;
 
 pub mod query;
 pub mod values;
@@ -22,59 +23,47 @@ where
 	Database: DatabaseAdapter,
 {
 	pub frontend: Frontend,
-	pub database: Database,
+	pub database: Option<Database>,
 }
 impl<Frontend, Database> Core<Frontend, Database>
 where
 	Frontend: FrontendAdapter,
 	Database: DatabaseAdapter, {
-
-	pub fn get_frontend(&self) -> &Frontend {
-		&self.frontend
+	///Sends a query to the connected DatabaseAdapter.\
+	///If there is no DatabaseAdapter, the database_message event on the frontend will be called immediately with [`DatabaseResult::NoDatabase`]
+	pub async fn send_query(&self, query: DatabaseQuery) -> DatabaseResult {
+		if let Some(database) = &self.database {
+			let result = database.send_query(query);
+			self.frontend.database_message(query.id, result);
+			result
+		} else {
+			self.frontend.database_message(query.id, DatabaseResult::NoDatabase);
+			DatabaseResult::NoDatabase
+		}
 	}
-	pub fn get_frontend_mut(&mut self) -> &mut Frontend {
-		&mut self.frontend
-	}
-	pub fn get_database(&self) -> &Database {
-		&self.database
-	}
-	pub fn get_database_mut(&mut self) -> &mut Database {
-		&mut self.database
-	}
-}
-
-///Describes what communication type the Frontend expects from the Core
-pub enum CommunicationMode<Communicator> {
-	///The Core will push updates to the Frontend without prompt. This is best for instantaneous responses but requires more resources
-	Push(Communicator),
-	///The Core will wait for the Frontend to request an update. This is best for performance, but the Frontend will not know if anything happens from another instance.
-	Poll
 }
 
 ///Describes the functions required for Ammuto to control and handle any frontend
 pub trait FrontendAdapter {
 	type DatabaseQuerySender : FnOnce(DatabaseQuery) -> Result<(), SendError<DatabaseQuery>>;
 	type DatabaseResultReceiver : FnOnce(u32) -> Result<DatabaseResult, RecvError>;
-	///Requests the Frontend's preferred mode of communication
-	fn preferred_flow() -> CommunicationMode<impl FrontendCommunicator>;
 	///Serves as the entry point for the frontend. This is expected to block the thread
 	fn run();
-	///When a result is returned from a query, or the database is pushing a change to the frontend, this function is called
+	///When a result is returned from a query, this function is called
 	/// 
 	///This function is expected to be thread-safe. It is recommended to use channels to communicate with the frontend thread.
-	fn database_message(&mut self, id: u64, values: DatabaseResult);
-}
-///Describes the functions required to communicate with the Frontend using [`CommunicationMode::Push`]
-pub trait FrontendCommunicator {
-	//TODO: Push communication style
+	fn database_message(&self, id: Uuid, values: DatabaseResult);
 }
 ///Describes the functions a Database should provide to accept data and requests from Ammuto
 pub trait DatabaseAdapter {
 	//TODO: CRUD and saving
+	///Sends a query to the Database
+	fn send_query(&self, query: DatabaseQuery) -> DatabaseResult;
 }
 ///Describes the functions needed to get and put resources on the target medium.
 pub trait ResourceAdapter {
 	//TODO: Filesystem Access that also encompasses HTTPS or FTP request format.
+	fn read_media();
 	
 	///Sets the adapter used for compression. If [`None`], compression must be either handled by the filesystem or there to be no compression at all.
 	fn set_compression_adapter(&mut self, adapter: Option<impl CompressionAdapter>);

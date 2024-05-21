@@ -1,14 +1,19 @@
 use crate::values::{Collection, Group, Media, Tag, User};
+use serde::Deserialize;
+use uuid::Uuid;
 
 ///Represents a fully formed query to send to the database.
 ///You may manually create one of this, or use one of the other Query structs to build one in a safer, more verbose way
+#[derive(Clone, PartialEq)]
 pub struct DatabaseQuery {
 	///The type or table the query references
 	pub query_type: QueryType,
 	///The conditions required for a match.
 	pub conditions: Vec<QueryCondition>,
 	///The format for a return
-	pub return_type: ReturnType
+	pub return_type: ReturnType,
+	///The randomly generated ID of the query
+	pub id: Uuid
 } 
 
 trait QueryBuilder {
@@ -85,7 +90,8 @@ impl QueryBuilder for TagQuery {
 		DatabaseQuery {
 			query_type: QueryType::Tags,
 			conditions: self.conditions,
-			return_type: self.return_type
+			return_type: self.return_type,
+			id: Uuid::new_v4()
 		}
 	}
 
@@ -137,7 +143,8 @@ impl QueryBuilder for MediaQuery {
 		DatabaseQuery {
 			query_type: QueryType::Media,
 			conditions: self.conditions,
-			return_type: self.return_type
+			return_type: self.return_type,
+			id: Uuid::new_v4()
 		}
 	}
 
@@ -184,7 +191,8 @@ impl QueryBuilder for GroupQuery {
 		DatabaseQuery {
 			query_type: QueryType::Groups,
 			conditions: self.conditions,
-			return_type: self.return_type
+			return_type: self.return_type,
+			id: Uuid::new_v4()
 		}
 	}
 
@@ -226,7 +234,8 @@ impl QueryBuilder for CollectionQuery {
 		DatabaseQuery {
 			query_type: QueryType::Collections,
 			conditions: self.conditions,
-			return_type: self.return_type
+			return_type: self.return_type,
+			id: Uuid::new_v4()
 		}
 	}
 
@@ -268,7 +277,8 @@ impl QueryBuilder for UserQuery {
 		DatabaseQuery {
 			query_type: QueryType::Users,
 			conditions: self.conditions,
-			return_type: self.return_type
+			return_type: self.return_type,
+			id: Uuid::new_v4()
 		}
 	}
 
@@ -278,6 +288,7 @@ impl QueryBuilder for UserQuery {
 }
 
 ///Describes each table, or more generically data type, a query may operate on
+#[derive(PartialEq, Eq, PartialOrd, Ord, Clone, Copy, Debug)]
 pub enum QueryType {
 	Tags,
 	Media,
@@ -287,6 +298,7 @@ pub enum QueryType {
 }
 
 ///Describes each of the operators that can be found within a query
+#[derive(PartialEq, Eq, PartialOrd, Ord, Clone, Debug)]
 pub enum QueryCondition {
 	///Requests the next condition to fail
 	Not,
@@ -314,6 +326,7 @@ pub enum QueryCondition {
 	HasPermissions(u64),
 }
 ///Describes each format a query may wish to receive the data back as
+#[derive(PartialEq, Eq, PartialOrd, Ord, Clone, Copy, Debug)]
 pub enum ReturnType {
 	///The query requests the amount of items that match
 	Quantity,
@@ -322,6 +335,7 @@ pub enum ReturnType {
 }
 
 ///An error related to the query
+#[derive(PartialEq, Eq, PartialOrd, Ord, Clone, Debug)]
 pub enum QueryError {
 	///The query used an operator that was not supported by the database
 	Unsupported(QueryCondition),
@@ -343,6 +357,7 @@ pub enum QueryError {
 	BadResponse
 }
 ///Describes the 3 states a property from a database can be in
+#[derive(PartialEq, Eq, PartialOrd, Ord, Debug, Clone)]
 pub enum DatabaseValue<T> {
 	///A valid value was assigned to the property
 	Some(T),
@@ -351,12 +366,14 @@ pub enum DatabaseValue<T> {
 	///The user is not authorised to know the value of this property
 	Unauthorised
 }
+
 ///Describes the possible return types from a database
+#[derive(PartialEq, PartialOrd, Ord, Clone, Debug)]
 pub enum DatabaseResult {
 	///The database provided a list of tags
 	Tags(Vec<DatabaseValue<Tag>>),
 	///The database provided a list of media objects
-	Media(Vec<DatabaseValue<Media>>),
+	Media(Vec<DatabaseValue<Box<dyn Media>>>),
 	///The database provided a list of tag groups
 	Groups(Vec<DatabaseValue<Group>>),
 	///The database provided a list of media collections
@@ -364,5 +381,8 @@ pub enum DatabaseResult {
 	///The database provided a list of users
 	Users(Vec<DatabaseValue<User>>),
 	///The database provided an integer
-	Integer(DatabaseValue<u32>)
+	Integer(DatabaseValue<u32>),
+
+	///There is no database attached to this Ammuto instance
+	NoDatabase
 }
